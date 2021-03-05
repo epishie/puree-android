@@ -7,7 +7,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
-import android.util.Log;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -28,7 +27,9 @@ public class PureeSQLiteStorage extends SupportSQLiteOpenHelper.Callback impleme
 
     private static final String COLUMN_NAME_LOG = "log";
 
-    private static final int DATABASE_VERSION = 1;
+    private static final String COLUMN_NAME_CREATED_AT = "created_at";
+
+    private static final int DATABASE_VERSION = 2;
 
     private final SupportSQLiteOpenHelper openHelper;
 
@@ -67,6 +68,7 @@ public class PureeSQLiteStorage extends SupportSQLiteOpenHelper.Callback impleme
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_NAME_TYPE, type);
         contentValues.put(COLUMN_NAME_LOG, jsonLog);
+        contentValues.put(COLUMN_NAME_CREATED_AT, System.currentTimeMillis());
         openHelper.getWritableDatabase().insert(TABLE_NAME, SQLiteDatabase.CONFLICT_NONE, contentValues);
     }
 
@@ -161,14 +163,17 @@ public class PureeSQLiteStorage extends SupportSQLiteOpenHelper.Callback impleme
         String query = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 COLUMN_NAME_TYPE + " TEXT," +
-                COLUMN_NAME_LOG + " TEXT" +
+                COLUMN_NAME_LOG + " TEXT," +
+                COLUMN_NAME_CREATED_AT + " TEXT" +
                 ")";
         db.execSQL(query);
     }
 
     @Override
     public void onUpgrade(SupportSQLiteDatabase db, int oldVersion, int newVersion) {
-        Log.e("PureeDbHelper", "unexpected onUpgrade(db, " + oldVersion + ", " + newVersion + ")");
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COLUMN_NAME_CREATED_AT + " INTEGER;");
+        }
     }
 
     @Override
