@@ -4,12 +4,15 @@ import com.cookpad.puree.PureeLogger;
 import com.cookpad.puree.async.AsyncResult;
 import com.cookpad.puree.internal.PureeVerboseRunnable;
 import com.cookpad.puree.internal.RetryableTaskRunner;
+import com.cookpad.puree.storage.EnhancedPureeStorage;
 import com.cookpad.puree.storage.Records;
 
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
+import static com.cookpad.puree.storage.EnhancedPureeStorage.ofType;
 
 @ParametersAreNonnullByDefault
 public abstract class PureeBufferedOutput extends PureeOutput {
@@ -90,7 +93,18 @@ public abstract class PureeBufferedOutput extends PureeOutput {
     }
 
     private Records getRecordsFromStorage() {
-        return storage.select(type(), conf.getLogsPerRequest());
+        if (storage instanceof EnhancedPureeStorage) {
+            return ((EnhancedPureeStorage) storage).select(new EnhancedPureeStorage.QueryBuilder() {
+                @Override
+                public EnhancedPureeStorage.Query build(EnhancedPureeStorage.Query query) {
+                    query.setPredicates(ofType(type()));
+                    query.setCount(conf.getLogsPerRequest());
+                    return query;
+                }
+            });
+        } else {
+            return storage.select(type(), conf.getLogsPerRequest());
+        }
     }
 
     public abstract void emit(List<String> jsonLogs, final AsyncResult result);
