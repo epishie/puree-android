@@ -29,6 +29,8 @@ public class PureeSQLiteStorage extends SupportSQLiteOpenHelper.Callback impleme
 
     private static final String COLUMN_NAME_CREATED_AT = "created_at";
 
+    private static final String COLUMN_NAME_PRIORITY = "priority";
+
     private static final int DATABASE_VERSION = 2;
 
     private final SupportSQLiteOpenHelper openHelper;
@@ -164,7 +166,8 @@ public class PureeSQLiteStorage extends SupportSQLiteOpenHelper.Callback impleme
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 COLUMN_NAME_TYPE + " TEXT," +
                 COLUMN_NAME_LOG + " TEXT," +
-                COLUMN_NAME_CREATED_AT + " TEXT" +
+                COLUMN_NAME_CREATED_AT + " TEXT," +
+                COLUMN_NAME_PRIORITY + " INTEGER" +
                 ")";
         db.execSQL(query);
     }
@@ -173,6 +176,7 @@ public class PureeSQLiteStorage extends SupportSQLiteOpenHelper.Callback impleme
     public void onUpgrade(SupportSQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 2) {
             db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COLUMN_NAME_CREATED_AT + " INTEGER;");
+            db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COLUMN_NAME_PRIORITY + " INTEGER DEFAULT 0");
         }
     }
 
