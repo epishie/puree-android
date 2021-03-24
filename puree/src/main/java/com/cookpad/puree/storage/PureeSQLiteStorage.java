@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import androidx.sqlite.db.SupportSQLiteDatabase;
@@ -152,15 +153,18 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
 
     @Override
     public void delete(Records records) {
+        /*
         String where = COLUMN_NAME_ID + " IN (" + records.getIdsAsString() + ")";
         openHelper.getWritableDatabase().delete(TABLE_NAME, where, null);
+         */
+        delete(withIds(records.getIdsAsString()));
     }
 
     @Override
     public void truncateBufferedLogs(int maxRecords) {
         int recordSize = getRecordCount();
         if (recordSize > maxRecords) {
-            String where = COLUMN_NAME_ID + " IN ( SELECT " + COLUMN_NAME_ID +" FROM " + TABLE_NAME +
+            String where = COLUMN_NAME_ID + " IN ( SELECT " + COLUMN_NAME_ID + " FROM " + TABLE_NAME +
                     " ORDER BY " + COLUMN_NAME_ID + " ASC LIMIT " + (recordSize - maxRecords) + ")";
             openHelper.getWritableDatabase().delete(TABLE_NAME, where, null);
         }
@@ -211,20 +215,10 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
         sb.append("SELECT * FROM ");
         sb.append(TABLE_NAME);
 
-        List<Object> values = new ArrayList<>();
-
-        List<String> wheres = new ArrayList<>();
-        if (query.getPredicates() != null) {
-            for (Predicate predicate : query.getPredicates()) {
-                if (predicate instanceof OfType) {
-                    wheres.add(COLUMN_NAME_TYPE + " = ?");
-                    values.add(((OfType) predicate).getType());
-                }
-            }
-        }
-        if (!wheres.isEmpty()) {
+        WhereValues whereValues = getWhereValues(query.getPredicates());
+        if (whereValues != null) {
             sb.append(" WHERE ");
-            sb.append(TextUtils.join(" AND ", wheres));
+            sb.append(whereValues.where);
         }
 
         sb.append(" ORDER BY ");
@@ -246,12 +240,62 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
             sb.append(query.getCount());
         }
 
-        Cursor cursor = openHelper.getReadableDatabase().query(sb.toString(), values.toArray());
+        Cursor cursor = openHelper.getReadableDatabase().query(sb.toString(), whereValues != null ? whereValues.values : null);
 
         try {
             return recordsFromCursor(cursor);
         } finally {
             cursor.close();
+        }
+    }
+
+    @Override
+    public void delete(Predicate... predicates) {
+        WhereValues whereValues = getWhereValues(predicates);
+        if (whereValues == null) {
+            return;
+        }
+
+        openHelper.getWritableDatabase().delete(TABLE_NAME, whereValues.where, whereValues.values);
+    }
+
+    @Nullable
+    private static WhereValues getWhereValues(Predicate[] predicates) {
+        if (predicates == null) {
+            return null;
+        }
+
+        List<String> wheres = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+        for (Predicate predicate : predicates) {
+            if (predicate instanceof OfType) {
+                wheres.add(COLUMN_NAME_TYPE + " = ?");
+                values.add(((OfType) predicate).getType());
+            } else if (predicate instanceof WithIds) {
+                wheres.add(COLUMN_NAME_ID + " IN (" + ((WithIds) predicate).getIds() +")");
+           }
+        }
+        return new WhereValues((TextUtils.join(" AND ", wheres)), values.toArray());
+    }
+
+    @ParametersAreNonnullByDefault
+    private static class WhereValues {
+
+        private final String where;
+
+        private final Object[] values;
+
+        WhereValues(String where, Object[] values) {
+            this.where = where;
+            this.values = values;
+        }
+
+        public String getWhere() {
+            return where;
+        }
+
+        public Object[] getValues() {
+            return values;
         }
     }
 }
