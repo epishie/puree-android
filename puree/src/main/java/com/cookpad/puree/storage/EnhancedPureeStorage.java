@@ -7,6 +7,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public abstract class EnhancedPureeStorage implements PureeStorage {
     public abstract Records select(QueryBuilder queryBuilder);
 
+    public abstract void delete(Predicate... predicates);
+
     public interface Predicate {}
 
     protected static class OfType implements Predicate {
@@ -21,8 +23,24 @@ public abstract class EnhancedPureeStorage implements PureeStorage {
         }
     }
 
+    protected static class WithIds implements Predicate {
+        private final String ids;
+
+        WithIds(String ids) {
+            this.ids = ids;
+        }
+
+        public String getIds() {
+            return ids;
+        }
+    }
+
     public static Predicate ofType(String type) {
         return new OfType(type);
+    }
+
+    public static Predicate withIds(String ids) {
+        return new WithIds(ids);
     }
 
     @ParametersAreNonnullByDefault
