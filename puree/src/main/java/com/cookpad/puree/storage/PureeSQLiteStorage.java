@@ -40,7 +40,7 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
 
     private final SupportSQLiteOpenHelper openHelper;
 
-    private final boolean isOrderByDesc;
+    private final Boolean isOrderByDesc;
 
     private final AtomicBoolean lock = new AtomicBoolean(false);
 
@@ -55,10 +55,10 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
     }
 
     public PureeSQLiteStorage(Context context) {
-        this(context, false);
+        this(context, null);
     }
 
-    public PureeSQLiteStorage(Context context, boolean isOrderByDesc) {
+    public PureeSQLiteStorage(Context context, @Nullable Boolean isOrderByDesc) {
         this.isOrderByDesc = isOrderByDesc;
         openHelper = new FrameworkSQLiteOpenHelperFactory()
                 .create(
@@ -88,40 +88,27 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
         openHelper.getWritableDatabase().insert(TABLE_NAME, SQLiteDatabase.CONFLICT_NONE, contentValues);
     }
 
-    private String getOrderType() {
-        String orderType;
-        if (this.isOrderByDesc) {
-            orderType = "DESC";
-        } else {
-            orderType = "ASC";
-        }
-        return orderType;
-    }
+    public Records select(String type, final int logsPerRequest) {
+        final String logType = type;
 
-    public Records select(String type, int logsPerRequest) {
-        String query = "SELECT * FROM " + TABLE_NAME +
-                " WHERE " + COLUMN_NAME_TYPE + " = ?" +
-                " ORDER BY id " + getOrderType() +
-                " LIMIT " + logsPerRequest;
-        Cursor cursor = openHelper.getReadableDatabase().query(query, new String[]{type});
-
-        try {
-            return recordsFromCursor(cursor);
-        } finally {
-            cursor.close();
-        }
+        return select(new QueryBuilder() {
+            @Override
+            public Query build(Query query) {
+                query.setPredicates(ofType(logType));
+                query.setCount(logsPerRequest);
+                return query;
+            }
+        });
     }
 
     @Override
     public Records selectAll() {
-        String query = "SELECT * FROM " + TABLE_NAME + " ORDER BY id " + getOrderType();
-        Cursor cursor = openHelper.getReadableDatabase().query(query);
-
-        try {
-            return recordsFromCursor(cursor);
-        } finally {
-            cursor.close();
-        }
+        return select(new QueryBuilder() {
+            @Override
+            public Query build(Query query) {
+                return query;
+            }
+        });
     }
 
     private Records recordsFromCursor(Cursor cursor) {
@@ -155,10 +142,6 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
 
     @Override
     public void delete(Records records) {
-        /*
-        String where = COLUMN_NAME_ID + " IN (" + records.getIdsAsString() + ")";
-        openHelper.getWritableDatabase().delete(TABLE_NAME, where, null);
-         */
         delete(withIds(records.getIdsAsString()));
     }
 
@@ -225,20 +208,38 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
             sb.append(whereValues.where);
         }
 
-        sb.append(" ORDER BY ");
-        //noinspection SwitchStatementWithTooFewBranches
-        switch (query.getSort().getField()) {
-            case ID:
-                sb.append(COLUMN_NAME_ID);
-                break;
+        Sort[] sorting;
+        if (isOrderByDesc != null) {
+            if (isOrderByDesc) {
+                sorting = new Sort[] { new Sort(Sort.Field.ID, Sort.Order.DESCENDING) };
+            } else {
+                sorting = new Sort[] { new Sort(Sort.Field.ID, Sort.Order.ASCENDING) };
+            }
+        } else {
+            sorting = query.getSorting();
         }
-        switch (query.getSort().getOrder()) {
-            case ASCENDING:
-                sb.append(" ASC");
-                break;
-            case DESCENDING:
-                sb.append(" DESC");
+        if (sorting.length > 0) {
+            sb.append(" ORDER BY ");
+            for (int i = 0; i < sorting.length; i++) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                Sort sort = sorting[i];
+                switch (sort.getField()) {
+                    case ID:
+                        sb.append(COLUMN_NAME_ID);
+                        break;
+                }
+                switch (sort.getOrder()) {
+                    case ASCENDING:
+                        sb.append(" ASC");
+                        break;
+                    case DESCENDING:
+                        sb.append(" DESC");
+                }
+            }
         }
+
         if (query.getCount() != null) {
             sb.append(" LIMIT ");
             sb.append(query.getCount());

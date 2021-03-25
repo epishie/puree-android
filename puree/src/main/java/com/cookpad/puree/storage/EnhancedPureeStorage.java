@@ -71,7 +71,7 @@ public abstract class EnhancedPureeStorage implements PureeStorage {
     @ParametersAreNonnullByDefault
     public static class Query {
         private Predicate[] predicates = new Predicate[] {};
-        private Sort sort = new Sort();
+        private Sort[] sorting = new Sort[] {};
         private Integer count = null;
 
         public void setPredicates(Predicate... predicates) {
@@ -82,12 +82,12 @@ public abstract class EnhancedPureeStorage implements PureeStorage {
             return predicates;
         }
 
-        public void setSort(Sort sort) {
-            this.sort = sort;
+        public void setSorting(Sort[] sorting) {
+            this.sorting = sorting;
         }
 
-        public Sort getSort() {
-            return sort;
+        public Sort[] getSorting() {
+            return sorting;
         }
 
         public void setCount(int count) {
