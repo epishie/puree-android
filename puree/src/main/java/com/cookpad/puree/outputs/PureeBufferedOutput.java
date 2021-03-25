@@ -98,6 +98,7 @@ public abstract class PureeBufferedOutput extends PureeOutput {
                 @Override
                 public EnhancedPureeStorage.Query build(EnhancedPureeStorage.Query query) {
                     query.setPredicates(ofType(type()));
+                    query.setSorting(conf.getSorting());
                     query.setCount(conf.getLogsPerRequest());
                     return query;
                 }
