@@ -1,5 +1,6 @@
 package com.cookpad.puree;
 
+import com.cookpad.puree.outputs.PureeBufferedOutput;
 import com.cookpad.puree.outputs.PureeOutput;
 import com.cookpad.puree.storage.PureeStorage;
 import com.cookpad.puree.storage.Records;
@@ -39,9 +40,18 @@ public class PureeLogger {
     }
 
     public void send(Object log) {
+        send(log, 0);
+    }
+
+    public void send(Object log, int priority) {
         List<PureeOutput> outputs = getRegisteredOutputPlugins(log);
         for (PureeOutput output : outputs) {
-            output.receive(serializeLog(log));
+            String serializedLog = serializeLog(log);
+            if (output instanceof PureeBufferedOutput) {
+                ((PureeBufferedOutput) output).receive(serializedLog, priority);
+            } else {
+                output.receive(serializedLog);
+            }
         }
     }
 

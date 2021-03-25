@@ -5,6 +5,9 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 public abstract class EnhancedPureeStorage implements PureeStorage {
+
+    public abstract void insert(String type, String jsonLog, int priority);
+
     public abstract Records select(QueryBuilder queryBuilder);
 
     public abstract void delete(Predicate... predicates);
@@ -45,15 +48,11 @@ public abstract class EnhancedPureeStorage implements PureeStorage {
 
     @ParametersAreNonnullByDefault
     public static class Sort {
-        public enum Field { ID }
+        public enum Field { ID, PRIORITY }
         public enum Order { ASCENDING, DESCENDING }
 
         private final Field field;
         private final Order order;
-
-        public Sort() {
-            this(Field.ID, Order.ASCENDING);
-        }
 
         public Sort(Field field, Order order) {
             this.field = field;

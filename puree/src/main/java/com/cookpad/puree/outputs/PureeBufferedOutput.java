@@ -51,6 +51,24 @@ public abstract class PureeBufferedOutput extends PureeOutput {
         flushTask.tryToStart();
     }
 
+    public void receive(final String jsonLog, final int priority) {
+        executor.execute(new PureeVerboseRunnable(new Runnable() {
+            @Override
+            public void run() {
+                String filteredLog = applyFilters(jsonLog);
+                if (filteredLog != null) {
+                    if (storage instanceof EnhancedPureeStorage) {
+                        ((EnhancedPureeStorage) storage).insert(type(), filteredLog, priority);
+                    } else {
+                        storage.insert(type(), filteredLog);
+                    }
+                }
+            }
+        }));
+
+        flushTask.tryToStart();
+    }
+
     @Override
     public void flush() {
         executor.execute(new PureeVerboseRunnable(new Runnable() {

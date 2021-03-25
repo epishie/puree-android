@@ -81,11 +81,7 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
     }
 
     public void insert(String type, String jsonLog) {
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(COLUMN_NAME_TYPE, type);
-        contentValues.put(COLUMN_NAME_LOG, jsonLog);
-        contentValues.put(COLUMN_NAME_CREATED_AT, System.currentTimeMillis());
-        openHelper.getWritableDatabase().insert(TABLE_NAME, SQLiteDatabase.CONFLICT_NONE, contentValues);
+        insert(type, jsonLog, 0);
     }
 
     public Records select(String type, final int logsPerRequest) {
@@ -195,6 +191,16 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
     }
 
     @Override
+    public void insert(String type, String jsonLog, int priority) {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(COLUMN_NAME_TYPE, type);
+        contentValues.put(COLUMN_NAME_LOG, jsonLog);
+        contentValues.put(COLUMN_NAME_CREATED_AT, System.currentTimeMillis());
+        contentValues.put(COLUMN_NAME_PRIORITY, priority);
+        openHelper.getWritableDatabase().insert(TABLE_NAME, SQLiteDatabase.CONFLICT_NONE, contentValues);
+   }
+
+    @Override
     public Records select(QueryBuilder queryBuilder) {
         Query query = queryBuilder.build(new Query());
 
@@ -228,6 +234,9 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
                 switch (sort.getField()) {
                     case ID:
                         sb.append(COLUMN_NAME_ID);
+                        break;
+                    case PRIORITY:
+                        sb.append(COLUMN_NAME_PRIORITY);
                         break;
                 }
                 switch (sort.getOrder()) {

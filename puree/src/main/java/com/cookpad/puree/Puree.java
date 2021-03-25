@@ -36,6 +36,17 @@ public class Puree {
     }
 
     /**
+     * Try to send log with priority.
+     * <p>
+     * This log is sent immediately or put into buffer (it's depending on output plugin). Priority is ignored if the output
+     * plugin is not buffered or if the storage does not support it.
+     */
+    public static void send(final Object log, int priority) {
+        checkIfPureeHasInitialized();
+        logger.send(log, priority);
+    }
+
+    /**
      * Try to flush all logs that are in buffer.
      */
     public static void flush() {
