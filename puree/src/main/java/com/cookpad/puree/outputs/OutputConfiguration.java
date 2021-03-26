@@ -10,6 +10,7 @@ public class OutputConfiguration {
     private int logsPerRequest = 100;
     private int maxRetryCount = 5;
     private EnhancedPureeStorage.Sort[] sorting = new EnhancedPureeStorage.Sort[] {};
+    private long purgeAgeMillis = -1;
 
     OutputConfiguration() {
     }
@@ -44,5 +45,13 @@ public class OutputConfiguration {
 
     public void setSorting(EnhancedPureeStorage.Sort... sorting) {
         this.sorting = sorting;
+    }
+
+    public long getPurgeAgeMillis() {
+        return purgeAgeMillis;
+    }
+
+    public void setPurgeAgeMillis(long purgeAgeMillis) {
+        this.purgeAgeMillis = purgeAgeMillis;
     }
 }
