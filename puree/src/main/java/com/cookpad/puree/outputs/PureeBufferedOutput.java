@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import static com.cookpad.puree.storage.EnhancedPureeStorage.ofType;
+import static com.cookpad.puree.storage.EnhancedPureeStorage.withAge;
 
 @ParametersAreNonnullByDefault
 public abstract class PureeBufferedOutput extends PureeOutput {
@@ -66,6 +67,7 @@ public abstract class PureeBufferedOutput extends PureeOutput {
             flushTask.retryLater();
             return;
         }
+        purgeRecordsFromStorage();
         final Records records = getRecordsFromStorage();
 
         if (records.isEmpty()) {
@@ -97,7 +99,7 @@ public abstract class PureeBufferedOutput extends PureeOutput {
             return ((EnhancedPureeStorage) storage).select(new EnhancedPureeStorage.QueryBuilder() {
                 @Override
                 public EnhancedPureeStorage.Query build(EnhancedPureeStorage.Query query) {
-                    query.setPredicates(ofType(type()));
+                    query.setConditions(ofType(type()));
                     query.setSorting(conf.getSorting());
                     query.setCount(conf.getLogsPerRequest());
                     return query;
@@ -106,6 +108,14 @@ public abstract class PureeBufferedOutput extends PureeOutput {
         } else {
             return storage.select(type(), conf.getLogsPerRequest());
         }
+    }
+
+    private void purgeRecordsFromStorage() {
+        if (!(storage instanceof EnhancedPureeStorage) || conf.getPurgeAgeMillis() == -1) {
+            return;
+        }
+
+        ((EnhancedPureeStorage) storage).delete(ofType(type()), withAge(conf.getPurgeAgeMillis()));
     }
 
     public abstract void emit(List<String> jsonLogs, final AsyncResult result);

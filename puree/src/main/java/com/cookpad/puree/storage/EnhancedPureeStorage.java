@@ -7,11 +7,11 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public abstract class EnhancedPureeStorage implements PureeStorage {
     public abstract Records select(QueryBuilder queryBuilder);
 
-    public abstract void delete(Predicate... predicates);
+    public abstract void delete(Condition... conditions);
 
-    public interface Predicate {}
+    public interface Condition {}
 
-    protected static class OfType implements Predicate {
+    protected static class OfType implements Condition {
         private final String type;
 
         OfType(String type) {
@@ -23,7 +23,7 @@ public abstract class EnhancedPureeStorage implements PureeStorage {
         }
     }
 
-    protected static class WithIds implements Predicate {
+    protected static class WithIds implements Condition {
         private final String ids;
 
         WithIds(String ids) {
@@ -35,12 +35,28 @@ public abstract class EnhancedPureeStorage implements PureeStorage {
         }
     }
 
-    public static Predicate ofType(String type) {
+    protected static class WithAge implements Condition {
+        private final long ageMillis;
+
+        WithAge(long ageMillis) {
+            this.ageMillis = ageMillis;
+        }
+
+        public long getAgeMillis() {
+            return ageMillis;
+        }
+    }
+
+    public static Condition ofType(String type) {
         return new OfType(type);
     }
 
-    public static Predicate withIds(String ids) {
+    public static Condition withIds(String ids) {
         return new WithIds(ids);
+    }
+
+    public static Condition withAge(long ageMillis) {
+        return new WithAge(ageMillis);
     }
 
     @ParametersAreNonnullByDefault
@@ -70,16 +86,16 @@ public abstract class EnhancedPureeStorage implements PureeStorage {
 
     @ParametersAreNonnullByDefault
     public static class Query {
-        private Predicate[] predicates = new Predicate[] {};
+        private Condition[] conditions = new Condition[] {};
         private Sort[] sorting = new Sort[] {};
         private Integer count = null;
 
-        public void setPredicates(Predicate... predicates) {
-            this.predicates = predicates;
+        public void setConditions(Condition... conditions) {
+            this.conditions = conditions;
         }
 
-        public Predicate[] getPredicates() {
-            return predicates;
+        public Condition[] getConditions() {
+            return conditions;
         }
 
         public void setSorting(Sort[] sorting) {

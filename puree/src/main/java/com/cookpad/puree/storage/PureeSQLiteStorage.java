@@ -92,7 +92,7 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
         return select(new QueryBuilder() {
             @Override
             public Query build(Query query) {
-                query.setPredicates(ofType(logType));
+                query.setConditions(ofType(logType));
                 query.setCount(logsPerRequest);
                 return query;
             }
@@ -198,7 +198,7 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
         sb.append("SELECT * FROM ");
         sb.append(TABLE_NAME);
 
-        WhereValues whereValues = getWhereValues(query.getPredicates());
+        WhereValues whereValues = getWhereValues(query.getConditions());
         if (whereValues != null) {
             sb.append(" WHERE ");
             sb.append(whereValues.where);
@@ -251,8 +251,8 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
     }
 
     @Override
-    public void delete(Predicate... predicates) {
-        WhereValues whereValues = getWhereValues(predicates);
+    public void delete(Condition... conditions) {
+        WhereValues whereValues = getWhereValues(conditions);
         if (whereValues == null) {
             return;
         }
@@ -261,20 +261,23 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
     }
 
     @Nullable
-    private static WhereValues getWhereValues(Predicate[] predicates) {
-        if (predicates == null) {
+    private static WhereValues getWhereValues(Condition[] conditions) {
+        if (conditions == null) {
             return null;
         }
 
         List<String> wheres = new ArrayList<>();
         List<Object> values = new ArrayList<>();
-        for (Predicate predicate : predicates) {
-            if (predicate instanceof OfType) {
+        for (Condition condition : conditions) {
+            if (condition instanceof OfType) {
                 wheres.add(COLUMN_NAME_TYPE + " = ?");
-                values.add(((OfType) predicate).getType());
-            } else if (predicate instanceof WithIds) {
-                wheres.add(COLUMN_NAME_ID + " IN (" + ((WithIds) predicate).getIds() +")");
-           }
+                values.add(((OfType) condition).getType());
+            } else if (condition instanceof WithIds) {
+                wheres.add(COLUMN_NAME_ID + " IN (" + ((WithIds) condition).getIds() +")");
+            } else if (condition instanceof WithAge) {
+                wheres.add(COLUMN_NAME_CREATED_AT + " <= ?");
+                values.add(System.currentTimeMillis() - ((WithAge) condition).getAgeMillis());
+            }
         }
         return new WhereValues((TextUtils.join(" AND ", wheres)), values.toArray());
     }
