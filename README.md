@@ -150,6 +150,10 @@ public class OutFakeApi extends PureeBufferedOutput {
         conf.setLogsPerRequest(10);
         // set retry count. if fail to send logs, logs will be sending at next time. defaults to 5.
         conf.setMaxRetryCount(3);
+        // set the order by which the logs are processed to decreasing priority
+        conf.setSorting(new Sort(Sort.Field.PRIORITY, Sort.Order.DESCENDING);
+        // set to purge buffered logs older than 2 weeks
+        conf.setPurgeAgeMillis(2 * 7 * 24 * 60 * 60 * 1000);
         return conf;
     }
 
