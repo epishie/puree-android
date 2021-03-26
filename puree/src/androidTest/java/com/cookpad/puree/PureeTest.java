@@ -37,6 +37,11 @@ public class PureeTest {
         public void send(Object log) {
 
         }
+
+        @Override
+        public void send(Object log, int priority) {
+
+        }
     }
 
     static class PvLog {

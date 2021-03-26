@@ -5,6 +5,8 @@ import com.cookpad.puree.PureeFilter;
 import com.cookpad.puree.PureeLogger;
 import com.cookpad.puree.PureeSerializer;
 import com.cookpad.puree.async.AsyncResult;
+import com.cookpad.puree.storage.EnhancedPureeStorage;
+import com.cookpad.puree.storage.EnhancedPureeStorage.Sort;
 import com.cookpad.puree.storage.PureeSQLiteStorage;
 
 import junit.framework.AssertionFailedError;
@@ -163,6 +165,26 @@ public class PureeBufferedOutputTest {
         @Override
         public String apply(String jsonLog) {
             return null;
+        }
+    }
+
+    class BufferedOutputPrioritySort extends BufferedOutput{
+
+        @Nonnull
+        @Override
+        public OutputConfiguration configure(OutputConfiguration conf) {
+            conf.setSorting(new Sort(Sort.Field.PRIORITY, Sort.Order.DESCENDING));
+            return conf;
+        }
+    }
+
+    class BufferedOutputPurge extends BufferedOutput{
+
+        @Nonnull
+        @Override
+        public OutputConfiguration configure(OutputConfiguration conf) {
+            conf.setPurgeAgeMillis(1000);
+            return conf;
         }
     }
 
@@ -360,6 +382,37 @@ public class PureeBufferedOutputTest {
 
         assertThat(logs.size(), is(3));
 
+    }
+
+    @Test
+    public void testPureeBufferedOutput_sortByPriority() throws Exception {
+        initializeLogger(new BufferedOutputPrioritySort());
+
+        logger.send(new PvLog("foo"));
+        logger.send(new PvLog("bar"), 2);
+        logger.send(new PvLog("baz"), 1);
+
+        logger.flush();
+
+        assertThat(logs.poll(100, TimeUnit.MILLISECONDS), is("{\"name\":\"bar\"}"));
+        assertThat(logs.poll(100, TimeUnit.MILLISECONDS), is("{\"name\":\"baz\"}"));
+        assertThat(logs.poll(100, TimeUnit.MILLISECONDS), is("{\"name\":\"foo\"}"));
+    }
+
+    @Test
+    public void testPureeBufferedOutput_purge() throws Exception {
+        initializeLogger(new BufferedOutputPurge());
+
+        logger.send(new PvLog("foo"));
+        Thread.sleep(1000);
+        logger.send(new PvLog("bar"));
+        Thread.sleep(900);
+        logger.send(new PvLog("baz"));
+
+        logger.flush();
+
+        assertThat(logs.poll(100, TimeUnit.MILLISECONDS), is("{\"name\":\"bar\"}"));
+        assertThat(logs.poll(100, TimeUnit.MILLISECONDS), is("{\"name\":\"baz\"}"));
     }
 
 }

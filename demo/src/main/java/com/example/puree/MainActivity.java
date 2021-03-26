@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         button1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Puree.send(new ClickLog("MainActivity", "BUTTON 1"));
+                Puree.send(new ClickLog("MainActivity", "BUTTON 1"), 1);
             }
         });
         button2.setOnClickListener(new View.OnClickListener() {
