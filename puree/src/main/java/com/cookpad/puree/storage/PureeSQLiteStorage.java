@@ -262,7 +262,7 @@ public class PureeSQLiteStorage extends EnhancedPureeStorage {
 
     @Nullable
     private static WhereValues getWhereValues(Condition[] conditions) {
-        if (conditions == null) {
+        if (conditions == null || conditions.length == 0) {
             return null;
         }
 

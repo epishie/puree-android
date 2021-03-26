@@ -166,6 +166,16 @@ public class PureeBufferedOutputTest {
         }
     }
 
+    class BufferedOutputPurge extends BufferedOutput{
+
+        @Nonnull
+        @Override
+        public OutputConfiguration configure(OutputConfiguration conf) {
+            conf.setPurgeAgeMillis(1000);
+            return conf;
+        }
+    }
+
     @Before
     public void setUp() throws Exception {
         context = ApplicationProvider.getApplicationContext();
@@ -360,6 +370,22 @@ public class PureeBufferedOutputTest {
 
         assertThat(logs.size(), is(3));
 
+    }
+
+    @Test
+    public void testPureeBufferedOutput_purge() throws Exception {
+        initializeLogger(new BufferedOutputPurge());
+
+        logger.send(new PvLog("foo"));
+        Thread.sleep(1000);
+        logger.send(new PvLog("bar"));
+        Thread.sleep(900);
+        logger.send(new PvLog("baz"));
+
+        logger.flush();
+
+        assertThat(logs.poll(100, TimeUnit.MILLISECONDS), is("{\"name\":\"bar\"}"));
+        assertThat(logs.poll(100, TimeUnit.MILLISECONDS), is("{\"name\":\"baz\"}"));
     }
 
 }
